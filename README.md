@@ -1,7 +1,11 @@
-<h1 align="center">SearchPhone 🕵🏽‍♂️</h1>
+<h1 align="center">SearchPhone 🕵🏽‍♂️ (Rust Edition)</h1>
 
 <p align="center">
-Is a comprehensive OSINT tool for looking up linked phone number information, using multiple APIs to gather information from various sources. Developed for use with Python from the terminal. 👁
+SearchPhone is a high-performance, asynchronous OSINT suite for investigating telephone number intelligence, threat exposure, and entity relationships across multiple search engines, code repositories, and infostealer databases.
+</p>
+
+<p align="center">
+<i>This project was originally started as a Rust port of the original <a href="https://github.com/HackUnderway/SearchPhone">SearchPhone</a> tool, rewritten from scratch for maximum concurrency, memory safety, and standalone binary deployment, and subsequently expanded with advanced OSINT dorking, STIX 2.1 feeds, interactive D3.js visualization, and batch processing.</i>
 </p>
 
 <p align="center">
@@ -9,69 +13,159 @@ Is a comprehensive OSINT tool for looking up linked phone number information, us
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white" alt="Python version">
+  <img src="https://img.shields.io/badge/Rust-1.70+-orange?logo=rust&logoColor=white" alt="Rust version">
   <img src="https://img.shields.io/badge/NUMVERIFY/SERPAPI/GITHUB-API-blue?logo=rapidapi&logoColor=white">
   <img src="https://img.shields.io/badge/License-MIT-green?logo=open-source-initiative&logoColor=white" alt="License">
 </p>
 
-## ✨ Features
+## 🚀 Features & Capabilities
 
-- 📱 **Phone Number Validation** - Validates and formats phone numbers using phonenumbers library
-- 🔍 **Multiple Search Engines** - Searches Google (via SerpAPI) and DuckDuckGo
-- 💻 **Code Repository Search** - Finds phone numbers in GitHub code
-- 📝 **Social Media Search** - Searches Reddit for mentions
-- 📊 **Carrier Information** - Gets operator and location data via Numverify API
-- 🛡️ **Infostealer Intelligence** - Checks if a phone number has been compromised by info-stealer malware via [Hudson Rock Cavalier API](https://www.hudsonrock.com/) (free, no API key required)
-- 📄 **Automatic Reports** - Generates JSON and PDF reports automatically
-- 🚀 **Parallel Processing** - Searches multiple sources simultaneously for speed
-- 🎨 **Colorful Output** - Easy to read terminal output with colors
+- ⚡ **Pure Rust & High Concurrency**: Built with `tokio` (1.43), `reqwest`, and `axum` with zero Python/Node dependencies.
+- 🌍 **International Phone Validation**: Google `libphonenumber` integration with automatic E.164 standardization, carrier, and timezone parsing.
+- 🛡️ **Composite Threat Intel & Risk Scoring**: Calculates a 0–100 numerical risk score with severity levels (`CLEAN`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), analyzing infostealer infections, credential leaks, and disposable VoIP line types.
+- 🔍 **Multi-Engine Search & Smart Dorking**:
+  - Google Search (SerpAPI)
+  - Brave Search API
+  - DuckDuckGo Instant Answers
+  - Automated Search Dorks (Pastebin, Ghostbin, PDF/XLSX/CSV leaked documents, social directories)
+- 👥 **Social & Code Footprinting**:
+  - Reddit discussion & sentiment search
+  - GitHub code repository leaks & hardcoded secrets lookup
+- 📊 **Multi-Format Export & Visual Graph**:
+  - **Terminal UI**: Modern cybersecurity ASCII banner and Unicode box cards.
+  - **JSON**: Complete structured investigation reports.
+  - **PDF**: Multi-page formatted reports.
+  - **Interactive HTML Graph**: Self-contained standalone D3.js force-directed relationship graph (`report.html`).
+  - **STIX 2.1 Threat Feed**: Machine-readable JSON bundles for SIEM/SOC platforms (Splunk, OpenCTI, MISP).
+- ⚡ **Automation & High-Throughput Batching**:
+  - Bulk processing from file (`--batch <FILE>`) with worker pool concurrency and `indicatif` progress bar.
+  - Unix piping & JSON streaming (`cat numbers.txt | searchphone --stream | jq .`).
+- 🌐 **Embedded Web Dashboard & REST API**: Run standalone web console via `searchphone --serve --port 8080`.
+- 🔒 **Investigator OPSEC & PII Redaction**:
+  - Built-in proxy routing (`--proxy <URL>`) and native Tor support (`--tor`).
+  - Sensitive PII masking mode (`--redact`).
 
-## 🔑 API Keys Required
+---
 
-Get your API keys from the following services:
+## 🛠️ Usage
+
+### 1. Single Target Investigation
+```bash
+searchphone "+16502530000"
+searchphone "+16502530000" us --redact
+```
+
+### 2. Batch Processing
+```bash
+searchphone --batch targets.txt --concurrency 20
+```
+
+### 3. Unix Pipeline / Streaming Mode
+```bash
+cat targets.txt | searchphone --stream | jq '.results.threat_reputation'
+```
+
+### 4. Embedded Web Dashboard & API
+```bash
+searchphone --serve --port 8080
+# Open http://localhost:8080 in your browser
+```
+
+### 5. OPSEC Routing via Proxy or Tor
+```bash
+# Route via SOCKS5 or HTTP proxy
+searchphone "+16502530000" --proxy socks5://127.0.0.1:9050
+
+# Native Tor daemon route
+searchphone "+16502530000" --tor
+```
+
+## 🔑 API Keys Configuration
 
 | Service | Purpose | Link | Plan | Key |
 |---------|---------|------|------|-----|
-| **Numverify** | Phone number validation & carrier info | [numverify.com](https://numverify.com/) | Free (100 requests/month) | 🔑 (Necessary) |
-| **SerpAPI** | Google Search results | [serpapi.com](https://serpapi.com/) | Free (250 searches/month) | 🔑 (Necessary) |
-| **GitHub Token** | GitHub code search | [GitHub Settings](https://github.com/settings/tokens) | Free (5000 requests/hour) | 🔑 (Necessary) |
-| **Hudson Rock** | Infostealer intelligence | [cavalier.hudsonrock.com](https://cavalier.hudsonrock.com/api/json/v2/osint-tools/search-by-username?username=+19777334049) | Free (No API key required) | ❌ No key needed |
+| **Numverify** | Phone number validation & carrier info | [numverify.com](https://numverify.com/) | Free (100 requests/month) | 🔑 (Optional) |
+| **NumLookup** | Reverse phone caller-ID | [numlookup.com](https://www.numlookup.com/) | Free | 🔑 (Optional) |
+| **SerpAPI** | Google Search results | [serpapi.com](https://serpapi.com/) | Free (250 searches/month) | 🔑 (Optional) |
+| **GitHub Token** | GitHub code search | [GitHub Settings](https://github.com/settings/tokens) | Free (5000 requests/hour) | 🔑 (Optional) |
+| **Hudson Rock** | Infostealer intelligence | [cavalier.hudsonrock.com](https://cavalier.hudsonrock.com) | Free (No API key required) | ❌ No key needed |
 
-### Configure your API keys:
+### Setting Up `.env`:
 
-The project includes an example.env file with the required variables. Follow these steps:
+Copy `example.env` to `.env` and insert your API keys:
 
-##### Step 1: Copy the example file
-
-```
-cp example.env .env
-```
-
-##### Step 2: Edit the .env file
-
-```
-nano .env
-```
-#### or
-```
-vim .env
-```
-#### or
-```
-code .env
+```bash
+# Optional API Keys - Set in .env or export in environment
+NUMVERIFY_KEY="your_numverify_api_key"
+NUMLOOKUP_KEY="your_numlookupapi_key"
+SERPAPI_KEY="your_serpapi_key"
+BRAVE_API_KEY="your_brave_search_api_key"
+GITHUB_TOKEN="your_github_personal_access_token"
 ```
 
-##### Step 3: Add your API keys
-Replace the placeholder values with your actual API keys:
+* **NumLookup** (https://www.numlookup.com): Reverse phone caller-ID and directory lookup with automated portal link generation (API key optional).
+* **Hudson Rock**: Free Infostealer threat intelligence (no API key required).
+* **DuckDuckGo**: Free search engine (no API key required).
+* **Reddit**: Free public search endpoint (no API key required).
 
-```
-# Required APIs
-NUMVERIFY_KEY=your_numverify_api_key_here
-SERPAPI_KEY=your_serpapi_key_here
-GITHUB_TOKEN=your_github_token_here
+---
+
+## 🚀 Installation & Building
+
+Ensure you have Rust and Cargo installed:
+
+```bash
+git clone https://github.com/HackUnderway/SearchPhone.git
+cd SearchPhone
+cargo build --release
 ```
 
-# Example
+The compiled binary will be located at `./target/release/searchphone`.
+
+---
+
+## 💻 Usage
+
+### 1. Interactive Mode
+Run without arguments to be prompted interactively:
+```bash
+cargo run --release
+# or
+./target/release/searchphone
+```
+
+### 2. Command Line Arguments
+Pass the phone number and country code directly (default region is `us`):
+```bash
+searchphone "+16502530000"
+# or specify region
+searchphone "+447911123456" "gb"
+# or using flags
+searchphone -p "+19777334049" -r "us"
+```
+
+### 3. CLI Options
+```text
+Usage: searchphone [OPTIONS] [POS_PHONE] [POS_REGION]
+
+Arguments:
+  [POS_PHONE]   Positional phone number
+  [POS_REGION]  Positional region [default: us]
+
+Options:
+  -p, --phone <PHONE>            Phone number to search (e.g. +16502530000 or +447911123456)
+  -r, --region <REGION>          Country region code (ISO 3166-1 alpha-2, e.g. 'us', 'gb', 'pe')
+      --no-pdf                   Disable PDF generation
+      --json-only                Only export JSON report
+  -o, --output-dir <OUTPUT_DIR>  Custom output directory for generated reports
+  -h, --help                     Print help
+  -V, --version                  Print version
+```
+
+---
+
+# 📦 Example Output
+
 <p align="center">
 <img src="assets/Demo_SearchPhone.png" title="SearchPhone" alt="SearchPhone" width="600"/>
 </p>
@@ -80,77 +174,16 @@ GITHUB_TOKEN=your_github_token_here
 <img src="assets/Demo_SearchPhone_Update.png" title="SearchPhone" alt="SearchPhone" width="600"/>
 </p>
 
-> **The project is open to partners.**
+---
 
-# SUPPORTED DISTRIBUTIONS
-|Distribution | Verified version | 	Supported | 	Status |
-|--------------|--------------------|------|-------|
-|Kali Linux| 2026.2| ✅| Working   |
-|Parrot Security OS| 6.3| ✅ | Working   |
-|Windows| 11 | ✅ | Working   |
-|BackBox| 9 | ✅ | Working   |
-|Arch Linux| 2024.12.01 | ✅ | Working   |
+# 🧪 Running Tests
 
-# USAGE
+```bash
+cargo test
 ```
-git clone https://github.com/HackUnderway/SearchPhone.git
-```
-```
-cd SearchPhone
-```
-```
-python3 search_phone.py
-```
-# REQUIREMENTS
-```
-pip install -r requirements.txt
-```
-# SUPPORT
-Questions, bugs or suggestions to : info@hackunderway.com
-
-# LICENSE
-- [x] SearchPhone is licensed. 
-- [x] See [LICENSE](https://github.com/HackUnderway/SearchPhone#MIT-1-ov-file) for more information.
-
-# 👨‍💻 Author
-
-* [Victor Bancayan](https://www.offsec.com/bug-bounty-program/) - (**CEO at [Hack Underway](https://hackunderway.com/)**) 
 
 ---
 
-<h2 align="center">🕵️‍♂️ OSINT Platform</h2>
-<p align="center">
-  <a href="https://hackunderway.io/" target="_blank">
-    <img src="https://img.shields.io/badge/Try%20Enterprise%20Mode-hackunderway.io-0088CC?style=for-the-badge&logo=internet&logoColor=white" alt="OSINT Platform">
-  </a>
-</p>
-<p align="center">
-  <b>Automate OSINT processes</b><br>
-  New <b>Enterprise Mode</b> – Maltego-inspired interface with visual graphs and professional workflows.<br>
-  <a href="https://hackunderway.io/new-update-to-our-osint-platform-hack-underway/" target="_blank">📢 See what's new</a>
-</p>
+# 📄 License
 
-## 🔗 Links
-[![Patreon](https://img.shields.io/badge/patreon-000000?style=for-the-badge&logo=Patreon&logoColor=white)](https://www.patreon.com/c/HackUnderway)
-[![Web site](https://img.shields.io/badge/Website-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://hackunderway.com)
-[![Facebook](https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/HackUnderway)
-[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@JeyZetaOficial)
-[![Twitter/X](https://img.shields.io/badge/Twitter/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/JeyZetaOficial)
-[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://instagram.com/hackunderway)
-[![TryHackMe](https://img.shields.io/badge/TryHackMe-212C42?style=for-the-badge&logo=tryhackme&logoColor=white)](https://tryhackme.com/p/JeyZeta)
-
-## ☕️ Support the project
-
-If you like this tool, consider buying me a coffee:
-
-[![Buy Me a Coffee](https://img.shields.io/badge/-Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/hackunderway)
-
-## 🌞 Subscriptions
-
-###### Subscribe to: [Jey Zeta](https://www.facebook.com/JeyZetaOficial/subscribe/)
-
-[![Kali Linux](https://img.shields.io/badge/Kali_Linux-557C94?style=for-the-badge&logo=kalilinux&logoColor=white)](https://www.kali.org/)
-
-from <img src="https://i.imgur.com/ngJCbSI.png" title="Perú"> made in <img src="https://i.imgur.com/NNfy2o6.png" title="Python"> with <img src="https://i.imgur.com/S86RzPA.png" title="Love"> by: <font color="red">Victor Bancayan</font>
-
-© 2026
+This project is licensed under the [MIT License](LICENSE).
