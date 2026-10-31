@@ -90,6 +90,19 @@ pub fn evaluate_threat_reputation(
     }
 }
 
+impl ThreatReputation {
+    /// Returns the deterministic SOC triage recommendation for this risk score.
+    pub fn recommended_action(&self) -> &'static str {
+        match self.risk_score {
+            0..=15 => "ALLOW_STANDARD",
+            16..=39 => "STEP_UP_SMS_VERIFY",
+            40..=69 => "REQUIRE_HARDWARE_MFA",
+            70..=89 => "QUARANTINE_AND_ROTATE_CREDENTIALS",
+            _ => "BLOCK_IMMEDIATELY_AND_ISSUE_STIX_IOC",
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,5 +136,6 @@ mod tests {
         let rep = evaluate_threat_reputation("+19777334049", None, Some(&hr), &results);
         assert!(rep.risk_score >= 35);
         assert_eq!(rep.risk_level, "LOW"); // or MEDIUM depending on points
+        assert_eq!(rep.recommended_action(), "STEP_UP_SMS_VERIFY");
     }
 }

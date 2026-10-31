@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SearchPhone — Rust OSINT Telephony Intelligence, Threat Reputation & STIX 2.1 Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="dark"] {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface-alt: #161616;
+      --fg: #f4f4f6;
+      --muted: #8e8e98;
+      --border: #242429;
+      --accent: #3b82f6;
+      --accent-alt: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    [data-theme="light"] {
+      --bg: #f8f8fa;
+      --surface: #ffffff;
+      --surface-alt: #f1f1f5;
+      --fg: #0b0b0e;
+      --muted: #52525b;
+      --border: #d4d4d8;
+      --accent: #2563eb;
+      --accent-alt: #059669;
+      --warn: #d97706;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+    a { color: inherit; text-decoration: none; }
+
+    .bh-header {
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .bh-brand { font-weight: 800; display: flex; align-items: center; gap: 0.75rem; }
+    .bh-brand span.tag {
+      background: var(--accent);
+      color: #fff;
+      padding: 0.1rem 0.45rem;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .bh-nav { display: flex; align-items: center; gap: 1.25rem; }
+    .bh-nav a:hover { color: var(--accent); }
+    .theme-btn {
+      background: var(--surface);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+    .theme-btn:hover { border-color: var(--accent); }
+
+    .subnav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 1.5rem;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+    .subnav a { color: var(--muted); }
+    .subnav a:hover { color: var(--fg); }
+
+    .container { max-width: 1400px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 960px) { .hero { grid-template-columns: 1fr; } }
+    .hero-left { padding: 3rem 2.25rem; border-right: 1px solid var(--border); }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.9rem;
+    }
+    h1 {
+      font-size: clamp(2rem, 3.6vw, 3.1rem);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.15rem;
+    }
+    .hero-desc {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 62ch;
+      margin-bottom: 1.75rem;
+    }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .btn {
+      padding: 0.7rem 1.25rem;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-secondary { background: var(--surface); color: var(--fg); }
+    .btn:hover { opacity: 0.92; }
+
+    .hero-right {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+    .metric-cell {
+      padding: 1.75rem;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric-cell:nth-child(2n) { border-right: none; }
+    .metric-cell:nth-child(n+3) { border-bottom: none; }
+    .metric-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+    .metric-val { font-size: 2.3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--fg); margin: 0.4rem 0; }
+    .metric-sub { font-size: 0.75rem; color: var(--accent-alt); font-family: 'JetBrains Mono', monospace; }
+
+    .section-header {
+      padding: 1.25rem 2.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .section-tag { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    .studio-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 960px) { .studio-grid { grid-template-columns: 1fr; } }
+    .controls-pane {
+      padding: 1.75rem;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+    .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .control-label {
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .control-label span.val { color: var(--fg); font-weight: 700; }
+    select, input[type="range"], input[type="text"] {
+      width: 100%;
+      background: var(--surface-alt);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      padding: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+    }
+
+    .canvas-pane {
+      padding: 1.75rem 2.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .stat-item { padding: 0.85rem 1rem; border-right: 1px solid var(--border); }
+    .stat-item:last-child { border-right: none; }
+    .stat-item .k { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+    .stat-item .v { font-size: 1.15rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 0.2rem; }
+
+    canvas {
+      width: 100%;
+      height: 190px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      display: block;
+    }
+
+    .stix-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      max-height: 170px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+
+    table.bench-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+    table.bench-table th, table.bench-table td {
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      text-align: left;
+    }
+    table.bench-table th { background: var(--surface-alt); color: var(--muted); text-transform: uppercase; font-size: 0.72rem; }
+    .badge-speed { background: rgba(16, 185, 129, 0.15); color: var(--accent-alt); padding: 0.15rem 0.45rem; font-weight: 700; }
+
+    footer {
+      padding: 2rem 2.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+  <header class="bh-header">
+    <div class="bh-brand">
+      <a href="https://code.brandonhubbard.com/">BRANDON HUBBARD // ENGINEERING PORTAL</a>
+      <span class="tag">RUST + OSINT + STIX 2.1</span>
+    </div>
+    <nav class="bh-nav">
+      <a href="https://github.com/bhubbard/searchphone">GitHub Repo</a>
+      <a href="benchmarks.md">Benchmarks</a>
+      <button class="theme-btn" id="themeToggle" type="button">LIGHT / DARK</button>
+    </nav>
+  </header>
+
+  <nav class="subnav">
+    <a href="#studio">01 // E.164 OSINT & Threat Reputation Studio</a>
+    <a href="#architecture">02 // STIX 2.1 & Redaction Pipeline</a>
+    <a href="#benchmarks">03 // Empirical Benchmarks (65.6x)</a>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">HIGH-SPEED OSINT TELEPHONY INTELLIGENCE & STIX 2.1 THREAT ENGINE</div>
+        <h1>SEARCHPHONE</h1>
+        <p class="hero-desc">
+          Pure Rust telephone intelligence suite combining ITU-T E.164 validation (<code>phonenumber</code>), Hudson Rock infostealer log correlation, VoIP/disposable carrier detection, OSINT search dorking, PII redaction (<code>--redact</code>), and STIX 2.1 Threat Intel bundle generation.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#studio">Launch OSINT Threat Studio</a>
+          <a class="btn btn-secondary" href="https://github.com/bhubbard/searchphone">View Source on GitHub</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="metric-cell">
+          <span class="metric-label">Batch OSINT Speedup</span>
+          <span class="metric-val">65.6x</span>
+          <span class="metric-sub">45.6 ms vs 2,990.0 ms (Python)</span>
+        </div>
+        <div class="metric-cell">
+          <span class="metric-label">100k E.164 Validations</span>
+          <span class="metric-val">24.6ms</span>
+          <span class="metric-sub">68.3x faster than phonenumbers</span>
+        </div>
+        <div class="metric-cell">
+          <span class="metric-label">Threat Scoring + Dorks</span>
+          <span class="metric-val">72.4x</span>
+          <span class="metric-sub">5.8 ms per 10,000 numbers</span>
+        </div>
+        <div class="metric-cell">
+          <span class="metric-label">Peak RSS Footprint</span>
+          <span class="metric-val">9.2MB</span>
+          <span class="metric-sub">20.0x lower than Python</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="studio">
+      <div class="section-header">
+        <span class="section-title">01 // Interactive E.164 Validator, Threat Reputation & STIX 2.1 Studio</span>
+        <span class="section-tag">src/{validator,threat/reputation,dorks}.rs</span>
+      </div>
+      <div class="studio-grid">
+        <div class="controls-pane">
+          <div class="control-group">
+            <label class="control-label">Target Phone Profile</label>
+            <select id="presetSelect">
+              <option value="clean">+1 650-253-0000 (US Fixed Line — Clean)</option>
+              <option value="compromised" selected>+1 977-733-4049 (Lumma Stealer + VoIP + GitHub Leak)</option>
+              <option value="prepaid">+44 7911 123456 (UK Prepaid SIM + Paste Dork Hit)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Hudson Rock Infostealer Hits <span class="val" id="valStealers">2</span></label>
+            <input type="range" id="stealerSlider" min="0" max="3" step="1" value="2" />
+          </div>
+          <div class="control-group">
+            <label class="control-label">Carrier Line Type</label>
+            <select id="lineTypeSelect">
+              <option value="fixed">Fixed / Mobile Carrier (+0 pts)</option>
+              <option value="voip" selected>Virtual / VoIP Non-Fixed (+15 pts)</option>
+              <option value="prepaid">Prepaid / Disposable SIM (+10 pts)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label">GitHub Code Leaks & Dorks <span class="val" id="valLeaks">Both Active (+25 pts)</span></label>
+            <select id="leakSelect">
+              <option value="none">No Public Code or Paste Hits (+0 pts)</option>
+              <option value="github">Hardcoded in Public GitHub Repo (+15 pts)</option>
+              <option value="both" selected>GitHub Repo + Paste/Doc Dork Hit (+25 pts)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="canvas-pane">
+          <div class="stat-strip">
+            <div class="stat-item">
+              <div class="k">Risk Score (0..100)</div>
+              <div class="v" id="stScore">95 / 100</div>
+            </div>
+            <div class="stat-item">
+              <div class="k">Risk Level</div>
+              <div class="v" id="stLevel">CRITICAL</div>
+            </div>
+            <div class="stat-item">
+              <div class="k">SOC Recommended Action</div>
+              <div class="v" id="stAction" style="font-size:0.78rem;">BLOCK_IMMEDIATELY_AND_ISSUE_STIX_IOC</div>
+            </div>
+            <div class="stat-item">
+              <div class="k">OSINT Dork Queries</div>
+              <div class="v" id="stDorks">4</div>
+            </div>
+          </div>
+
+          <canvas id="graphCanvas" width="880" height="190"></canvas>
+          <div class="stix-box" id="stixOutput"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="section-header">
+        <span class="section-title">02 // Multi-Format OSINT & Threat Intelligence Architecture</span>
+        <span class="section-tag">STIX 2.1 + D3 HTML + PDF + Redaction</span>
+      </div>
+      <div style="padding:1.5rem 2.25rem; border-bottom:1px solid var(--border); display:grid; grid-template-columns:repeat(3,1fr); gap:1rem;">
+        <div style="border:1px solid var(--border); padding:1rem; background:var(--surface);">
+          <div class="mono" style="font-size:0.72rem; color:var(--accent); font-weight:700;">STAGE 1 // ITU-T E.164 & SOCKS5 TOR ROUTING</div>
+          <p style="font-size:0.8rem; color:var(--muted); margin-top:0.35rem;">Normalizes raw numbers into E.164, International, and National formats while supporting <code>--tor</code> (<code>socks5://127.0.0.1:9050</code>) and concurrent batch streaming.</p>
+        </div>
+        <div style="border:1px solid var(--border); padding:1rem; background:var(--surface);">
+          <div class="mono" style="font-size:0.72rem; color:var(--accent-alt); font-weight:700;">STAGE 2 // HUDSON ROCK & DORK CORRELATION</div>
+          <p style="font-size:0.8rem; color:var(--muted); margin-top:0.35rem;">Correlates Lumma/RedLine infostealer logs, Numverify VoIP/disposable carrier flags, GitHub code leaks, and 4-category DuckDuckGo/Google dork templates.</p>
+        </div>
+        <div style="border:1px solid var(--border); padding:1rem; background:var(--surface);">
+          <div class="mono" style="font-size:0.72rem; color:var(--warn); font-weight:700;">STAGE 3 // STIX 2.1 & PII REDACTION</div>
+          <p style="font-size:0.8rem; color:var(--muted); margin-top:0.35rem;">Exports OASIS STIX 2.1 JSON bundles, standalone D3 relationship graphs, and PDF executive briefs with optional <code>--redact</code> PII masking.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="benchmarks">
+      <div class="section-header">
+        <span class="section-title">03 // Empirical Performance Benchmarks (SearchPhone vs Python OSINT)</span>
+        <span class="section-tag">8-Core x86_64 Linux</span>
+      </div>
+      <table class="bench-table">
+        <thead>
+          <tr>
+            <th>Pipeline Stage</th>
+            <th>Python (phonenumbers + requests + stix2)</th>
+            <th>searchphone (Rust + tokio + phonenumber)</th>
+            <th>Speedup</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>100,000 ITU-T E.164 Number Parse & Validation</td>
+            <td>1,680.0 ms</td>
+            <td><strong>24.6 ms</strong></td>
+            <td><span class="badge-speed">68.3x</span></td>
+          </tr>
+          <tr>
+            <td>10,000 Threat Reputation + Dork Matrix Evaluations</td>
+            <td>420.0 ms</td>
+            <td><strong>5.8 ms</strong></td>
+            <td><span class="badge-speed">72.4x</span></td>
+          </tr>
+          <tr>
+            <td>1,000 STIX 2.1 Bundles + D3 Entity Graph Exports</td>
+            <td>890.0 ms</td>
+            <td><strong>15.2 ms</strong></td>
+            <td><span class="badge-speed">58.6x</span></td>
+          </tr>
+          <tr>
+            <td><strong>Total Batch OSINT & Threat Intel Pipeline</strong></td>
+            <td><strong>2,990.0 ms</strong></td>
+            <td><strong>45.6 ms</strong></td>
+            <td><span class="badge-speed">65.6x</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      <span>SEARCHPHONE // SWISS MODERNIST ENGINEERING STUDIO</span>
+      <span>BUILT BY BRANDON HUBBARD — RUST 2021 EDITION</span>
+    </footer>
+  </main>
+
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      const root = document.documentElement;
+      root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      renderStudio();
+    });
+
+    const presetSelect = document.getElementById('presetSelect');
+    const stealerSlider = document.getElementById('stealerSlider');
+    const lineTypeSelect = document.getElementById('lineTypeSelect');
+    const leakSelect = document.getElementById('leakSelect');
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const PHONES = {
+      clean: '+16502530000',
+      compromised: '+19777334049',
+      prepaid: '+447911123456'
+    };
+
+    presetSelect.addEventListener('change', () => {
+      if (presetSelect.value === 'clean') {
+        stealerSlider.value = 0;
+        lineTypeSelect.value = 'fixed';
+        leakSelect.value = 'none';
+      } else if (presetSelect.value === 'compromised') {
+        stealerSlider.value = 2;
+        lineTypeSelect.value = 'voip';
+        leakSelect.value = 'both';
+      } else {
+        stealerSlider.value = 1;
+        lineTypeSelect.value = 'prepaid';
+        leakSelect.value = 'github';
+      }
+      renderStudio();
+    });
+
+    function renderStudio() {
+      const phone = PHONES[presetSelect.value] || '+16502530000';
+      const stealers = parseInt(stealerSlider.value, 10);
+      const lineType = lineTypeSelect.value;
+      const leaks = leakSelect.value;
+
+      document.getElementById('valStealers').textContent = stealers;
+      document.getElementById('valLeaks').textContent =
+        leaks === 'both' ? 'Both Active (+25 pts)' : (leaks === 'github' ? 'GitHub Only (+15 pts)' : 'None (+0 pts)');
+
+      let score = Math.min(75, stealers * 35);
+      if (lineType === 'voip') score += 15;
+      if (lineType === 'prepaid') score += 10;
+      if (leaks === 'github') score += 15;
+      if (leaks === 'both') score += 25;
+      score = Math.min(100, score);
+
+      let level = 'CLEAN';
+      let action = 'ALLOW_STANDARD';
+      let color = '#10b981';
+      if (score >= 90) { level = 'CRITICAL'; action = 'BLOCK_IMMEDIATELY_AND_ISSUE_STIX_IOC'; color = '#ef4444'; }
+      else if (score >= 70) { level = 'HIGH'; action = 'QUARANTINE_AND_ROTATE_CREDENTIALS'; color = '#ef4444'; }
+      else if (score >= 40) { level = 'MEDIUM'; action = 'REQUIRE_HARDWARE_MFA'; color = '#f59e0b'; }
+      else if (score >= 16) { level = 'LOW'; action = 'STEP_UP_SMS_VERIFY'; color = '#3b82f6'; }
+
+      document.getElementById('stScore').textContent = `${score} / 100`;
+      const stLevel = document.getElementById('stLevel');
+      stLevel.textContent = level;
+      stLevel.style.color = color;
+      document.getElementById('stAction').textContent = action;
+
+      // Draw entity relationship graph
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      ctx.fillStyle = isLight ? '#f1f1f5' : '#161616';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const cx = 440, cy = 95;
+      const nodes = [
+        { x: 160, y: 45, label: `Carrier: ${lineType.toUpperCase()}`, active: true, col: lineType === 'fixed' ? '#10b981' : '#f59e0b' },
+        { x: 160, y: 145, label: `HudsonRock Stealers (${stealers})`, active: stealers > 0, col: '#ef4444' },
+        { x: 720, y: 45, label: `GitHub Code Leaks`, active: leaks !== 'none', col: '#3b82f6' },
+        { x: 720, y: 145, label: `OSINT Paste Dorks (4)`, active: leaks === 'both', col: '#f59e0b' }
+      ];
+
+      nodes.forEach(n => {
+        ctx.strokeStyle = n.active ? n.col : (isLight ? '#d4d4d8' : '#2c2c34');
+        ctx.lineWidth = n.active ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(n.x, n.y);
+        ctx.stroke();
+
+        ctx.fillStyle = isLight ? '#ffffff' : '#111111';
+        ctx.fillRect(n.x - 95, n.y - 16, 190, 32);
+        ctx.strokeRect(n.x - 95, n.y - 16, 190, 32);
+
+        ctx.fillStyle = n.active ? (isLight ? '#0b0b0e' : '#f4f4f6') : '#8e8e98';
+        ctx.font = '600 11px JetBrains Mono';
+        ctx.fillText(n.label, n.x - 84, n.y + 4);
+      });
+
+      ctx.fillStyle = color;
+      ctx.fillRect(cx - 95, cy - 22, 190, 44);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 12px JetBrains Mono';
+      ctx.fillText(`E.164: ${phone}`, cx - 80, cy - 3);
+      ctx.font = '500 10px JetBrains Mono';
+      ctx.fillText(`RISK: ${score}/100 (${level})`, cx - 80, cy + 13);
+
+      const stix = {
+        type: "bundle",
+        id: "bundle--searchphone-osint-rust",
+        objects: [
+          {
+            type: "indicator",
+            spec_version: "2.1",
+            name: `Telephony OSINT Indicator ${phone}`,
+            pattern: `[x-phone-number:value = '${phone}']`,
+            pattern_type: "stix",
+            confidence: score,
+            x_searchphone_risk_level: level,
+            x_searchphone_recommended_action: action
+          }
+        ]
+      };
+      document.getElementById('stixOutput').textContent = JSON.stringify(stix, null, 2);
+    }
+
+    [stealerSlider, lineTypeSelect, leakSelect].forEach(el => el.addEventListener('input', renderStudio));
+    renderStudio();
+  </script>
+</body>
+</html>
