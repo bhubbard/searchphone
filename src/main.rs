@@ -1,6 +1,7 @@
 mod batch;
 mod config;
 mod dorks;
+mod legal_ooh;
 mod models;
 mod osint;
 mod reporter;
